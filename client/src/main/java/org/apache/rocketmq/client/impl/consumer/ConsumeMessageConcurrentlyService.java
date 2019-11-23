@@ -54,9 +54,13 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
     private final DefaultMQPushConsumer defaultMQPushConsumer;
     private final MessageListenerConcurrently messageListener;
     private final BlockingQueue<Runnable> consumeRequestQueue;
-    private final ThreadPoolExecutor consumeExecutor;
     private final String consumerGroup;
-
+    /**
+     * 定义了三个线程池：
+     *      一个主线程池用来正常执行收到的消息，
+     *      另外两个都是单线程的线程池，一个用来执行推迟消费的消息，另一个用来定期清理超时消息（15分钟）
+     */
+    private final ThreadPoolExecutor consumeExecutor;
     private final ScheduledExecutorService scheduledExecutorService;
     private final ScheduledExecutorService cleanExpireMsgExecutors;
 
@@ -197,6 +201,14 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         return result;
     }
 
+    /**
+     * 从Broker获取到一批消息后，根据BatchSize的设置，把一批消息封装到一个ConsumeRequest中，
+     * 然后把这个ConsumeRequest提交到consumeExecutor线程池中执行。
+     * @param msgs
+     * @param processQueue
+     * @param messageQueue
+     * @param dispatchToConsume
+     */
     @Override
     public void submitConsumeRequest(
         final List<MessageExt> msgs,
@@ -247,6 +259,15 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
         }
     }
 
+    /**
+     * 消息的处理结果可能有不同的值，主要的两个是CONSUME_SUCCESS和RECONSUME_LATER。
+     * 如果消费不成功，要把消息提交到scheduledExecutorService线程池中，5秒后再执行；
+     * 如果消费模式是CLUSTERING模式，未消费成功的消息会先被发送回Broker，供这个ConsumerGroup里的其他Consumer消费，
+     * 如果发送回Broker失败，再调用RECONSUME_LATER
+     * @param status
+     * @param context
+     * @param consumeRequest
+     */
     public void processConsumeResult(
         final ConsumeConcurrentlyStatus status,
         final ConsumeConcurrentlyContext context,
@@ -343,6 +364,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
             }
         }, 5000, TimeUnit.MILLISECONDS);
     }
+
 
     private void submitConsumeRequestLater(final ConsumeRequest consumeRequest
     ) {

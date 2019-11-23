@@ -28,6 +28,9 @@ import org.apache.rocketmq.common.protocol.body.SubscriptionGroupWrapper;
 import org.apache.rocketmq.common.protocol.body.TopicConfigSerializeWrapper;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+/**
+ * Slave和Master之间的信息同步机制
+ */
 public class SlaveSynchronize {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final BrokerController brokerController;

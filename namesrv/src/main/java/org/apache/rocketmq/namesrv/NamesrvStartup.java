@@ -82,6 +82,7 @@ public class NamesrvStartup {
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
+        //解析-c参数，-c命令用来指定配置文件的位置
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
@@ -97,7 +98,7 @@ public class NamesrvStartup {
                 in.close();
             }
         }
-
+        //解析-p参数，-p参数用来打印所有配置项的值
         if (commandLine.hasOption('p')) {
             InternalLogger console = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_NAME);
             MixAll.printObjectProperties(console, namesrvConfig);
@@ -136,13 +137,13 @@ public class NamesrvStartup {
         if (null == controller) {
             throw new IllegalArgumentException("NamesrvController is null");
         }
-
+       //根据解析出的配置参数，来初始化，然后调用controller.start()让NameServer开始服务。
         boolean initResult = controller.initialize();
         if (!initResult) {
             controller.shutdown();
             System.exit(-3);
         }
-
+        //注册ShutdownHookThread，当程序退出的时候会调用controller.shutdown来做退出前的清理工作
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {

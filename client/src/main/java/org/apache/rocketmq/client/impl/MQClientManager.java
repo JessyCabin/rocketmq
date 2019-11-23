@@ -29,6 +29,10 @@ public class MQClientManager {
     private final static InternalLogger log = ClientLogger.getLog();
     private static MQClientManager instance = new MQClientManager();
     private AtomicInteger factoryIndexGenerator = new AtomicInteger();
+    /**
+     * clientId的格式是："clientIp"+@+"InstanceName"
+     * clientIp是客户端机器的IP地址，一般不会变，instancename有默认值，也可以被手动设置
+     */
     private ConcurrentMap<String/* clientId */, MQClientInstance> factoryTable =
         new ConcurrentHashMap<String, MQClientInstance>();
 

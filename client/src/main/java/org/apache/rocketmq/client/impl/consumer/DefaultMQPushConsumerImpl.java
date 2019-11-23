@@ -232,9 +232,18 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             return;
         }
 
+        /***
+         * （1） 流量控制逻辑
+         * 客户端在每次pull请求前会做以下三个判断来控制流量：
+         *  pushConsumer会判断获取但还未处理的消息个数、消息总大小，Offset的跨度，任何一个值超过设定的大小就隔一段事件在拉去消息，从而
+         *  达到柳梁控制的目的。此外ProcessQueue还可以辅助实现顺序消费的逻辑
+         */
         long cachedMessageCount = processQueue.getMsgCount().get();
         long cachedMessageSizeInMiB = processQueue.getMsgSize().get() / (1024 * 1024);
-
+        /**
+         * （2）通过判断未处理消息的个数和总大小来控制是否继续请求消息。对于顺序消息还有一些特殊判断逻辑。
+         * 获取的消息返回后，根据返回状态，调用相应的处理方法。
+         */
         if (cachedMessageCount > this.defaultMQPushConsumer.getPullThresholdForQueue()) {
             this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL);
             if ((queueFlowControlTimes++ % 1000) == 0) {
@@ -427,6 +436,9 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             subExpression != null, // subscription
             classFilter // class filter
         );
+        /**
+         * （3）发送获取消息请求，这三个阶段不停地循环执行，直到程序被停止。
+         */
         try {
             this.pullAPIWrapper.pullKernelImpl(
                 pullRequest.getMessageQueue(),
@@ -579,8 +591,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     this.defaultMQPushConsumer.changeInstanceNameToPID();
                 }
 
+                /**
+                 * 初始化MQClientInstance，并设置好reblance策略和pullApiWraper.有这些结构后才能发送pull请求获取消息
+                 */
                 this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook);
-
                 this.rebalanceImpl.setConsumerGroup(this.defaultMQPushConsumer.getConsumerGroup());
                 this.rebalanceImpl.setMessageModel(this.defaultMQPushConsumer.getMessageModel());
                 this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPushConsumer.getAllocateMessageQueueStrategy());
@@ -607,7 +621,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     this.defaultMQPushConsumer.setOffsetStore(this.offsetStore);
                 }
                 this.offsetStore.load();
-
+                //根据对消息顺序需求的不同，使用不同的service类型初始化consumeMessageService
                 if (this.getMessageListenerInner() instanceof MessageListenerOrderly) {
                     this.consumeOrderly = true;
                     this.consumeMessageService =

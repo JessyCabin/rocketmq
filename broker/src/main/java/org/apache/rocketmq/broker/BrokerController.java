@@ -404,7 +404,11 @@ public class BrokerController {
                     }
                 }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
             }
-
+            /**
+             * 在broker启动时判断自己角色是否是slave，是的话就启动定时同步任务。
+             * 当broker角色是slave的时候，masteraddr的值会被正确设置，这样HAService在启动的时候，
+             * 在HAClient这个内部类中，connectMaster会被正确执行
+             */
             if (!messageStoreConfig.isEnableDLegerCommitLog()) {
                 if (BrokerRole.SLAVE == this.messageStoreConfig.getBrokerRole()) {
                     if (this.messageStoreConfig.getHaMasterAddress() != null && this.messageStoreConfig.getHaMasterAddress().length() >= 6) {

@@ -40,6 +40,23 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 import org.apache.rocketmq.store.CommitLog;
 import org.apache.rocketmq.store.DefaultMessageStore;
 
+/**
+ * 同步CommitLog内容功能实现。
+ * CommitLog和元数据信息不同：
+ *      首先，CommitLog的数据量比元数据要打；
+ *      其次，对实时性和可靠性要求也不一样。元数据信息是定时同步的，在两次同步的时间差里，
+ *       如果出现异常可能会造成Master上的元数据内容和Slave上的元数据内容不一致，不过这种情况还可以补救（通过
+ *       手动调整Offset，重启consumer等）。
+ *  commitlog在高可靠性场景下如果没有及时同步，一旦master机器出故障，消息就彻底丢失了。所以专门在HAService、
+ *  HAConnection和WaitNotifyObject这三个类里专门实现master和slave之间消息体内容的同步。
+ *
+ *  HAService是实现commitlog同步的主体。它在master和slave机器上的执行逻辑不同，默认是在master机器上执行。
+ *
+ *
+ *  master和slave的broker之间信息同步分为两种类型：
+ *      元数据信息，采用基于Netty的command方式来同步消息；
+ *      commitLog信息，同步方式是直接基于Java NIO来实现。直接进行TCP连接，这样效率更高。连接成功以后，通过对比master和slave的Offset，不断进行同步。
+ */
 public class HAService {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -167,6 +184,7 @@ public class HAService {
 
         /**
          * Starts listening to slave connections.
+         *master broker用于监听slave的HA连接（slave连接请求在HAClient#connectMaster()）
          *
          * @throws Exception If fails.
          */

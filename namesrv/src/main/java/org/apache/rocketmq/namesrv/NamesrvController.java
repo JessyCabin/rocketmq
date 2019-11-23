@@ -73,6 +73,10 @@ public class NamesrvController {
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    /**
+     * 启动一个默认8个线程的线程池。还有两个定时执行的线程，一个用来扫描失效的Broker，另一个用来打印配置信息
+     * @return
+     */
     public boolean initialize() {
 
         this.kvConfigManager.load();

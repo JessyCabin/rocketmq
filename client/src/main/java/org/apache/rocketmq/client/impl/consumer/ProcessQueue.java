@@ -36,6 +36,13 @@ import org.apache.rocketmq.common.protocol.body.ProcessQueueInfo;
 
 /**
  * Queue consumption snapshot
+ * 该类的主要功能：
+ *   用来监控和控制消息的执行状态，如：获得当前消息堆积的数量，解决超时情况等。
+ *   每个Message Queue都会有一个对应的ProcessQueue对象，保存了这个Message Queue消息处理状态的快照。
+ *
+ *   有了ProcessQueue对象，可以随时停止、启动消息的消费，同时也可用于帮助实现顺序消费消息；
+ *          顺序消息是通过ConsumeMessageOrderlyService类实现的。主要流程和ConsumeMessageConcurrentlyService类似，
+ *          区别只是在对并发消费的控制上。
  */
 public class ProcessQueue {
     public final static long REBALANCE_LOCK_MAX_LIVE_TIME =

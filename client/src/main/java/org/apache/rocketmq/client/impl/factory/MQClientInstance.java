@@ -85,6 +85,11 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 
+/**
+ * MQClientInstance是客户端各种类型的Consumer和Producer的底层类。
+ * 该类首先从NameServer获取并保存各种配置信息，比如Topic的Route信息；
+ * 同时MQClientInstance还会从MQClientAPIImpl类实现消息的收发，也就是从Broker获取消息或者发送消息到Broker.
+ */
 public class MQClientInstance {
     private final static long LOCK_TIMEOUT_MILLIS = 3000;
     private final InternalLogger log = ClientLogger.getLog();
@@ -223,6 +228,11 @@ public class MQClientInstance {
         return mqList;
     }
 
+    /**
+     * start方法中的MQClientAPIImpl对象用来负责底层消息通信，然后启动pullMessageService和rebalanceService。
+     * 在topicRouteTable，brokerAddrTable等中存储了从NameServer获得的集群状态信息，并通过startScheduledTask()来维护这些信息。
+     * @throws MQClientException
+     */
     public void start() throws MQClientException {
 
         synchronized (this) {
