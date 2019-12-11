@@ -55,6 +55,15 @@ public class MQFaultStrategy {
         this.sendLatencyFaultEnable = sendLatencyFaultEnable;
     }
 
+    /**
+     * Broker故障延迟机制：
+     *  1.根据对消息队列进行轮询获取一个消息队列
+     *  2.验证该消息队列是否可用
+     *  3.如果返回的MessageQueue可用，移除latencyFaultTolerance关于该topic条目，表明该Broker故障已经恢复。
+     * @param tpInfo
+     * @param lastBrokerName
+     * @return
+     */
     public MessageQueue selectOneMessageQueue(final TopicPublishInfo tpInfo, final String lastBrokerName) {
         if (this.sendLatencyFaultEnable) {
             try {

@@ -63,6 +63,11 @@ public class PullRequestHoldService extends ServiceThread {
         return sb.toString();
     }
 
+    /**
+     * 如果开启长轮询，每5s尝试一次，判断新消息是否到达。如果未开启长轮询，则默认等待1s再次尝试，可通过
+     * BrokerConfig#shortPollingTimeMills改变等待时间。
+     *
+     */
     @Override
     public void run() {
         log.info("{} service started", this.getServiceName());
@@ -93,6 +98,10 @@ public class PullRequestHoldService extends ServiceThread {
         return PullRequestHoldService.class.getSimpleName();
     }
 
+    /**
+     *遍历拉取任务表，根据topic与队列获取消息消费队列最大偏移量，如果该偏移量大于待拉取偏移量，说明有新消息到达，调用
+     * notifyMessageArriving出发消息拉取
+     */
     private void checkHoldRequest() {
         for (String key : this.pullRequestTable.keySet()) {
             String[] kArray = key.split(TOPIC_QUEUEID_SEPARATOR);

@@ -209,6 +209,10 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         this.offsetStore = offsetStore;
     }
 
+    /**
+     * 客户端封装消息pull请求
+     * @param pullRequest
+     */
     public void pullMessage(final PullRequest pullRequest) {
         final ProcessQueue processQueue = pullRequest.getProcessQueue();
         if (processQueue.isDropped()) {
@@ -834,6 +838,13 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         }
     }
 
+    /**
+     * 构建topic订阅信息SubscriptionData，并加入到RebalanceImpl的订阅消息中。订阅关系来源主要有两个：
+     *  1）通过调用DefaultMQPushConsumerImpl#subsccribe方法
+     *  2）订阅重试topic消息。从这里可以看出，RocketMQ消息重试是以消费组为单位，而不是topic,消息重试Topic名为%RETRY%+消费组名。
+     *  消费者在启动的时候会自动订阅该Topic，参与该topic的消息队列负载。
+     * @throws MQClientException
+     */
     private void copySubscription() throws MQClientException {
         try {
             Map<String, String> sub = this.defaultMQPushConsumer.getSubscription();

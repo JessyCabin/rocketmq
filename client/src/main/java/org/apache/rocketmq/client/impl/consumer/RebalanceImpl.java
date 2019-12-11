@@ -216,6 +216,10 @@ public abstract class RebalanceImpl {
         }
     }
 
+    /**
+     * 遍历订阅信息对每个topic的队列进行重新负载
+     * @param isOrder
+     */
     public void doRebalance(final boolean isOrder) {
         Map<String, SubscriptionData> subTable = this.getSubscriptionInner();
         if (subTable != null) {
@@ -258,6 +262,9 @@ public abstract class RebalanceImpl {
                 break;
             }
             case CLUSTERING: {
+                /**
+                 * 从订阅信息缓存表中获取topic的队列信息。
+                 */
                 Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
                 List<String> cidAll = this.mQClientFactory.findConsumerIdList(topic, consumerGroup);
                 if (null == mqSet) {
@@ -328,6 +335,15 @@ public abstract class RebalanceImpl {
         }
     }
 
+    /**
+     * 遍历当前负载队列集合，对比消息队列是否发生变化。如果队列不在新分配队列集合中，需要将该队列停止消费并保存消费进度；
+     * 遍历已分配的队列，如果队列不在队列负载表中（processQueueTable），则需要创建该队列拉取任务PullRequest，然后添加到
+     * PullMessageService线程的pullRequestQueue中，PullMessageService才会继续拉取任务。
+     * @param topic
+     * @param mqSet
+     * @param isOrder
+     * @return
+     */
     private boolean updateProcessQueueTableInRebalance(final String topic, final Set<MessageQueue> mqSet,
         final boolean isOrder) {
         boolean changed = false;

@@ -66,6 +66,16 @@ public class TopicPublishInfo {
         this.haveTopicRouterInfo = haveTopicRouterInfo;
     }
 
+    /**
+     * 在一次消息发送过程中，可能会多次执行选择消息队列这个方法，lastBrokerName就是上一次选择的执行
+     * 发送消息失败的Broker。第一次执行消息队列选择时，lastBrokerName为null，此时直接用sendWhichQueue自增再获取值，
+     * 与当前路由表中消息队列个数取模，返回该位置的MessageQueue，如果消息发送失败再失败的话，下次进行消息队列
+     * 选择时规避上次MessageQueue所在的Broker，否则还是很有可能再次失败。
+     *
+     * 该算法在一次消息发送过程中能成功规避故障的Broker
+     * @param lastBrokerName
+     * @return
+     */
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
         if (lastBrokerName == null) {
             return selectOneMessageQueue();

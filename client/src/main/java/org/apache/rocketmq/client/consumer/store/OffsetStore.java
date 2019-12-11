@@ -28,7 +28,7 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
  */
 public interface OffsetStore {
     /**
-     * Load
+     * Load 从消息进度存储文件加载消息进度到内存
      */
     void load() throws MQClientException;
 

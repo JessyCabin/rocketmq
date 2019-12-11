@@ -483,6 +483,12 @@ public class ConsumeQueue {
         }
     }
 
+    /**
+     * 根据startIndex获取消息消费队列条目。首先startIndex*20得到在consumequeue中的物理偏移量，如果该offset小于minLogicOffset，则返回null，说明该消息已被删除；
+     * 如果大于minLogicOffset，则根据偏移量定位到具体的物理文件，然后通过offset与物理文件大小取模获取在该文件的偏移量，从而从偏移量开始连续读取20个字节即可。
+     * @param startIndex
+     * @return
+     */
     public SelectMappedBufferResult getIndexBuffer(final long startIndex) {
         int mappedFileSize = this.mappedFileSize;
         long offset = startIndex * CQ_STORE_UNIT_SIZE;

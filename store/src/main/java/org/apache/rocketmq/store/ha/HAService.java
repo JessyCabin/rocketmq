@@ -41,6 +41,8 @@ import org.apache.rocketmq.store.CommitLog;
 import org.apache.rocketmq.store.DefaultMessageStore;
 
 /**
+ * RocketMQ主从同步核心实现类：
+ *
  * 同步CommitLog内容功能实现。
  * CommitLog和元数据信息不同：
  *      首先，CommitLog的数据量比元数据要打；
@@ -172,6 +174,7 @@ public class HAService {
 
     /**
      * Listens to slave connections to create {@link HAConnection}.
+     * HA Master端监听客户端连接实现类
      */
     class AcceptSocketService extends ServiceThread {
         private final SocketAddress socketAddressListen;
@@ -213,6 +216,9 @@ public class HAService {
 
         /**
          * {@inheritDoc}
+         * 该方法时标准的基于NIO的服务端程序实例，选择器每1秒处理一次连接就绪事件。连接事件就绪后，
+         * 调用ServerSocketChannel的accept()方法创建SocketChannel。然后为每一个连接创建一个HAConnection对象，
+         * 该HAConnection将负责Master-Slave数据同步逻辑
          */
         @Override
         public void run() {
@@ -267,6 +273,7 @@ public class HAService {
 
     /**
      * GroupTransferService Service
+     * 主从同步通知实现类
      */
     class GroupTransferService extends ServiceThread {
 
@@ -341,10 +348,13 @@ public class HAService {
         }
     }
 
+    /**
+     * HA Client端实现类
+     */
     class HAClient extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
         private final AtomicReference<String> masterAddress = new AtomicReference<>();
-        private final ByteBuffer reportOffset = ByteBuffer.allocate(8);
+        private final ByteBuffer reportOffset = ByteBuffer.allocate(8);//Slave向Master发起主从同步的拉取偏移量
         private SocketChannel socketChannel;
         private Selector selector;
         private long lastWriteTimestamp = System.currentTimeMillis();

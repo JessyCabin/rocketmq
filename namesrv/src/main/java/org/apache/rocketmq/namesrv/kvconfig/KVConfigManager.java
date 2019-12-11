@@ -41,6 +41,9 @@ public class KVConfigManager {
         this.namesrvController = namesrvController;
     }
 
+    /**
+     * 加载KV配置。
+     */
     public void load() {
         String content = null;
         try {

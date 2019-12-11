@@ -47,10 +47,11 @@ import org.apache.rocketmq.store.config.StorePathConfigHelper;
 public class ScheduleMessageService extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    //定时消息统一topic
     public static final String SCHEDULE_TOPIC = "SCHEDULE_TOPIC_XXXX";
-    private static final long FIRST_DELAY_TIME = 1000L;
-    private static final long DELAY_FOR_A_WHILE = 100L;
-    private static final long DELAY_FOR_A_PERIOD = 10000L;
+    private static final long FIRST_DELAY_TIME = 1000L;//第一次调用时延迟的时间，默认1s
+    private static final long DELAY_FOR_A_WHILE = 100L;//每一延时级别调度一次后延迟该时间间隔后再放入调度池
+    private static final long DELAY_FOR_A_PERIOD = 10000L;//发送异常后延迟该事件后再继续参与调度
 
     private final ConcurrentMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable =
         new ConcurrentHashMap<Integer, Long>(32);
@@ -110,6 +111,9 @@ public class ScheduleMessageService extends ConfigManager {
         return storeTimestamp + 1000;
     }
 
+    /**
+     * 根据延迟级别创建对应的定时任务，启动定时任务持久化延迟消息队列进度存储
+     */
     public void start() {
         if (started.compareAndSet(false, true)) {
             this.timer = new Timer("ScheduleMessageTimerThread", true);
@@ -221,6 +225,9 @@ public class ScheduleMessageService extends ConfigManager {
         return true;
     }
 
+    /**
+     * 定时调度任务实现类
+     */
     class DeliverDelayedMessageTimerTask extends TimerTask {
         private final int delayLevel;
         private final long offset;
@@ -260,6 +267,10 @@ public class ScheduleMessageService extends ConfigManager {
         }
 
         public void executeOnTimeup() {
+            /**
+             * 根据队列ID与延迟主题查找消息消费队列，如果未找到，说明目前并不存在该延时级别的消息，忽略本次任务，
+             * 根据延时级别创建下一次调度任务即可
+             */
             ConsumeQueue cq =
                 ScheduleMessageService.this.defaultMessageStore.findConsumeQueue(SCHEDULE_TOPIC,
                     delayLevel2QueueId(delayLevel));
@@ -267,11 +278,16 @@ public class ScheduleMessageService extends ConfigManager {
             long failScheduleOffset = offset;
 
             if (cq != null) {
+                /**
+                 * 根据offset从消息消费队列中获取当前队列中所有有效的消息，如果未找到则更新一下延迟队列定时拉取进度
+                 * 并创建定时任务待下一次继续尝试
+                 */
                 SelectMappedBufferResult bufferCQ = cq.getIndexBuffer(this.offset);
                 if (bufferCQ != null) {
                     try {
                         long nextOffset = offset;
                         int i = 0;
+                        //遍历ConsumeQueue，每一个标准ConsumeQueue条目为20个字节。解析出消息的物理偏移量、消息长度、消息tag hashcode，为从commitlog加载具体的消息做准备
                         ConsumeQueueExt.CqExtUnit cqExtUnit = new ConsumeQueueExt.CqExtUnit();
                         for (; i < bufferCQ.getSize(); i += ConsumeQueue.CQ_STORE_UNIT_SIZE) {
                             long offsetPy = bufferCQ.getByteBuffer().getLong();

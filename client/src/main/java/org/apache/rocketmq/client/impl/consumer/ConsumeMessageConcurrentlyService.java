@@ -366,6 +366,10 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
     }
 
 
+    /**
+     *将consumeRequest提交到消息消费者线程池中，如果提交过程中出现拒绝提交异常则延迟5秒再次提交
+     * @param consumeRequest
+     */
     private void submitConsumeRequestLater(final ConsumeRequest consumeRequest
     ) {
 

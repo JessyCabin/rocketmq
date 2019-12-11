@@ -35,7 +35,10 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.body.ProcessQueueInfo;
 
 /**
+ *
  * Queue consumption snapshot
+ * ProcessQueue是MessaeQueue在消费端的重现、快照。PullMessageService从消息服务器默认每次拉取32条消息，按消息的队列皮纳伊利顺序存放在ProcessQueue中，
+ * PullMessageService然后将消息提交到消费者消费线程池，消息成功消费后从ProcessQueue中移除。
  * 该类的主要功能：
  *   用来监控和控制消息的执行状态，如：获得当前消息堆积的数量，解决超时情况等。
  *   每个Message Queue都会有一个对应的ProcessQueue对象，保存了这个Message Queue消息处理状态的快照。

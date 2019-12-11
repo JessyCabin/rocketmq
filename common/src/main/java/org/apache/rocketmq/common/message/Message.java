@@ -22,6 +22,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * RocketMQ消息属性
+ * Message扩展属性存储在properties中，主要包含下面几个：
+ *  1.tag：消息TAG，用于消息过滤
+ *  2.keys:Message索引键，多个用空格隔开，RocketMQ可以根据这些key快速检索到消息
+ *  3.waitStoreMsgOK:消息发送时是否等消息存储完成后再返回
+ *  4.delayTimeLevel：消息延迟级别，用于定时消息或消息重试
+ */
 public class Message implements Serializable {
     private static final long serialVersionUID = 8445773977080406428L;
 

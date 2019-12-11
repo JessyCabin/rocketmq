@@ -34,16 +34,17 @@ public class MappedFileQueue {
     private static final InternalLogger LOG_ERROR = InternalLoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
     private static final int DELETE_FILES_BATCH_MAX = 10;
-
+    //存储目录
     private final String storePath;
-
+    //单个文件的存储大小
     private final int mappedFileSize;
-
+    //MappedFile文件集合
     private final CopyOnWriteArrayList<MappedFile> mappedFiles = new CopyOnWriteArrayList<MappedFile>();
 
     private final AllocateMappedFileService allocateMappedFileService;
-
+    //当前刷盘指针，表示该指针之前的所有数据全部持久化到磁盘
     private long flushedWhere = 0;
+    //当前数据提交指针，内存中ByteBuffer当前的写指针，该值大于等于flushedWhere
     private long committedWhere = 0;
 
     private volatile long storeTimestamp = 0;
@@ -101,6 +102,13 @@ public class MappedFileQueue {
         return mfs;
     }
 
+    /**
+     * 删除offset之后的所有文件。遍历目录下的文件，如果文件的尾部偏移量小于offset则跳过该文件，如果尾部的偏移量大于offset，则进一步比较offset
+     * 与文件的开始偏移量，如果offset大于文件的起始偏移量，说明当前文件包含了有效偏移量，设置MappedFile的flushedPosition和commitedPosition；
+     * 如果offset小于文件的起始偏移量，说明该文件是有效文件后面创建的，调用MappedFile#destroy释放MappedFile占用的内存资源（内存映射与内存通道等），然后
+     * 加入到待删除文件列表，最终调用deleteExpiredFile将文件从物理磁盘删除。
+     * @param offset
+     */
     public void truncateDirtyFiles(long offset) {
         List<MappedFile> willRemoveFiles = new ArrayList<MappedFile>();
 
