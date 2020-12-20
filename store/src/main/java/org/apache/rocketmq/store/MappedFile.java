@@ -63,6 +63,11 @@ public class MappedFile extends ReferenceResource {
     protected ByteBuffer writeBuffer = null;//堆内存ByteBuffer,如果不为空数据首先将存储在该Buffer中，然后提交到MappedFile对应的内存映射文件Buffer,transientStorePoolEnable为true时不为空
     protected TransientStorePool transientStorePool = null;//堆内存池，transientStorePoolEnable为true时启用
     private String fileName;//文件MappedFileQueue队列中第一个文件
+    private long fileFromOffset;
+    private File file;
+    private MappedByteBuffer mappedByteBuffer;
+    private volatile long storeTimestamp = 0;
+    private boolean firstCreateInQueue = false;
 
     public MappedFile() {
     }
