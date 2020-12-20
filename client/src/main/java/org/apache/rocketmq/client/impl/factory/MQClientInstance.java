@@ -17,6 +17,7 @@
 package org.apache.rocketmq.client.impl.factory;
 
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramSocket;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -122,6 +123,7 @@ public class MQClientInstance {
     private final ConsumerStatsManager consumerStatsManager;
     private final AtomicLong sendHeartbeatTimesTotal = new AtomicLong(0);
     private ServiceState serviceState = ServiceState.CREATE_JUST;
+    private DatagramSocket datagramSocket;
     private Random random = new Random();
 
     public MQClientInstance(ClientConfig clientConfig, int instanceIndex, String clientId) {
@@ -254,6 +256,10 @@ public class MQClientInstance {
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
                     break;
+                case RUNNING:
+                    break;
+                case SHUTDOWN_ALREADY:
+                    break;
                 case START_FAILED:
                     throw new MQClientException("The Factory object[" + this.getClientId() + "] has been created before, and failed.", null);
                 default:
@@ -373,6 +379,7 @@ public class MQClientInstance {
     }
 
     /**
+     *
      * @param offsetTable
      * @param namespace
      * @return newOffsetTable
@@ -391,7 +398,6 @@ public class MQClientInstance {
 
         return newOffsetTable;
     }
-
     /**
      * Remove offline broker
      */
@@ -683,13 +689,10 @@ public class MQClientInstance {
                     } else {
                         log.warn("updateTopicRouteInfoFromNameServer, getTopicRouteInfoFromNameServer return null, Topic: {}", topic);
                     }
-                } catch (MQClientException e) {
-                    if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) {
+                } catch (Exception e) {
+                    if (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX) && !topic.equals(MixAll.AUTO_CREATE_TOPIC_KEY_TOPIC)) {
                         log.warn("updateTopicRouteInfoFromNameServer Exception", e);
                     }
-                } catch (RemotingException e) {
-                    log.error("updateTopicRouteInfoFromNameServer Exception", e);
-                    throw new IllegalStateException(e);
                 } finally {
                     this.lockNamesrv.unlock();
                 }
@@ -753,10 +756,9 @@ public class MQClientInstance {
 
         return false;
     }
-
     /**
-     * This method will be removed in the version 5.0.0,because filterServer was removed,and method
-     * <code>subscribe(final String topic, final MessageSelector messageSelector)</code> is recommended.
+     * This method will be removed in the version 5.0.0,because filterServer was removed,and method <code>subscribe(final String topic, final MessageSelector messageSelector)</code>
+     * is recommended.
      */
     @Deprecated
     private void uploadFilterClassToAllFilterServer(final String consumerGroup, final String fullClassName,
@@ -865,6 +867,10 @@ public class MQClientInstance {
                     this.mQClientAPIImpl.shutdown();
                     this.rebalanceService.shutdown();
 
+                    if (this.datagramSocket != null) {
+                        this.datagramSocket.close();
+                        this.datagramSocket = null;
+                    }
                     MQClientManager.getInstance().removeClientFactory(this.clientId);
                     log.info("the client factory [{}] shutdown OK", this.clientId);
                     break;

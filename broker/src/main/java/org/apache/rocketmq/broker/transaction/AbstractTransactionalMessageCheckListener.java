@@ -30,7 +30,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractTransactionalMessageCheckListener {
@@ -49,7 +48,7 @@ public abstract class AbstractTransactionalMessageCheckListener {
             thread.setName("Transaction-msg-check-thread");
             return thread;
         }
-    }, new CallerRunsPolicy());
+    });
 
     public AbstractTransactionalMessageCheckListener() {
     }

@@ -27,15 +27,12 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
 import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.protocol.NamespaceUtil;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.remoting.RPCHook;
 
 /**
- * Schedule service for pull consumer.
- * This Consumer will be removed in 2022, and a better implementation {@link
- * DefaultLitePullConsumer} is recommend to use in the scenario of actively pulling messages.
+ * Schedule service for pull consumer
  */
 public class MQPullConsumerScheduleService {
     private final InternalLogger log = ClientLogger.getLog();
@@ -96,7 +93,7 @@ public class MQPullConsumerScheduleService {
     }
 
     public void registerPullTaskCallback(final String topic, final PullTaskCallback callback) {
-        this.callbackTable.put(NamespaceUtil.wrapNamespace(this.defaultMQPullConsumer.getNamespace(), topic), callback);
+        this.callbackTable.put(topic, callback);
         this.defaultMQPullConsumer.registerMessageQueueListener(topic, null);
     }
 
@@ -160,7 +157,7 @@ public class MQPullConsumerScheduleService {
         }
     }
 
-    public class PullTaskImpl implements Runnable {
+    class PullTaskImpl implements Runnable {
         private final MessageQueue messageQueue;
         private volatile boolean cancelled = false;
 

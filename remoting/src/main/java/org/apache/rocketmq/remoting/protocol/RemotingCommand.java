@@ -188,7 +188,7 @@ public class RemotingCommand {
     }
 
     public static int createNewRequestId() {
-        return requestId.getAndIncrement();
+        return requestId.incrementAndGet();
     }
 
     public static SerializeType getSerializeTypeConfigInThisServer() {
